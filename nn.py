@@ -11,41 +11,51 @@ import time
 imagesize = 28
 imagelength = imagesize * imagesize
 
-labels = ["0","1","2","3","4","5","6","7","8","9"]
+# labels = ["0","1","2","3","4","5","6","7","8","9"]
 
-Xfile = "images.idx3-ubyte.gz"
-yfile = "labels.idx1-ubyte.gz"
-trainingdatalength = 60000
+# Xfile = "data/digits.images.idx3-ubyte.gz"
+# yfile = "data/digits.labels.idx1-ubyte.gz"
 
-# Validation data
-vXfile = "val.images.idx3-ubyte.gz"
-vyfile = "val.labels.idx1-ubyte.gz"
-validationdatalength = 10000
+# vXfile = "data/val.digits.images.idx3-ubyte.gz"
+# vyfile = "data/val.digits.labels.idx1-ubyte.gz"
+
+
+labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+
+Xfile = "data/letters.images.idx3-ubyte.gz"
+yfile = "data/letters.labels.idx1-ubyte.gz"
+
+vXfile = "data/val.letters.images.idx3-ubyte.gz"
+vyfile = "data/val.letters.labels.idx1-ubyte.gz"
+
+showvalidationerrors = True
 
 # sampler
-sampleimage = "image.png"
+sampleimage = "data/image.png"
 enable_sampler = False
 
 # network
 input_size = imagelength
-hidden_size = 100
+hidden_size = 50
 output_size = len(labels)
 
 # Training variables
-batchsize = 50          # amount of samples to process each iteration
-epochs = 100            # amount of times to look through the data set
-alpha = 0.05            # amount of learning from one iteration
-alphadecay = .8         # alpha decay factor when loss increases
-alphacutoff = 0.0001    # stop converging if alpha drops below this threshold
+batchsize = 50           # amount of samples to process each iteration
+epochs = 100             # amount of times to look through the data set
+alpha = 0.05             # amount of learning from one iteration
+alphadecay = .8          # alpha decay factor when loss increases
+alphacutoff = 0.00005    # stop converging if alpha drops below this threshold
 
-softloss = 0.01         # smoothing factor for loss indication
-outputinterval = 23     # iterations per terminal update
+softloss = 0.001         # smoothing factor for loss indication
+outputinterval = 25      # iterations per terminal update
+multiline_status = True  # keep historical epochs visible
 
 # TRAINING DATA SETUP
 print("Initializing training and validation data ...", end="", flush=True)
 
 with gzip.open(yfile) as bytestream:
-    bytestream.read(8)
+    bytestream.read(4)
+    trainingdatalength = int.from_bytes(bytestream.read(4), 'big')
     buf = bytestream.read(trainingdatalength)
     y = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
     y = y.reshape(trainingdatalength,1)
@@ -66,7 +76,8 @@ with gzip.open(Xfile) as bytestream:
     X = X.reshape(trainingdatalength, imagelength)
 
 with gzip.open(vyfile) as bytestream:
-    bytestream.read(8)
+    bytestream.read(4)
+    validationdatalength = int.from_bytes(bytestream.read(4), 'big')
     buf = bytestream.read(validationdatalength)
     vy = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
     vy = vy.reshape(validationdatalength,1)
@@ -124,8 +135,6 @@ def batchtostring(batch):
 # Simple neural network with two hidden layers
 class NeuralNetwork:
 
-    
-
     def __init__(self, N = 2, H = 3, O = 1):
         self.N = N
         self.H = H
@@ -179,7 +188,7 @@ class NeuralNetwork:
         return o
 
 # Start the program
-
+            
 NN = NeuralNetwork(imagelength, hidden_size, len(labels))
 
 # calculate starting loss value
@@ -191,11 +200,8 @@ starttime = time.time()
 # TRAIN
 error = False
 for e in range(0, epochs):
-
-
     try:
         epoch_startloss = loss
-        print('\rEpoch %i Loss: %.5f Alpha: %.5f ... ' % (e, loss, alpha), end="", flush = True)
 
         # shuffle the dataset
         indices = np.arange(X.shape[0])
@@ -204,13 +210,24 @@ for e in range(0, epochs):
         X = X[indices]
         y = y[indices]
 
-        for i in range(0, int(trainingdatalength / batchsize)):
+        iterations = int(X.shape[0] / batchsize)
+
+        for i in range(0, iterations):
             batchstart = i * batchsize
             batchend = (i + 1) * batchsize
 
             forward = NN.train(X[batchstart:batchend], y[batchstart:batchend], batchsize, alpha)
             loss = crossentropy(y[batchstart:batchend], forward) / batchsize * softloss + (1-softloss) * loss
 
+            if i % outputinterval == 0 or i + 1 == iterations:
+                print('\rEpoch %03d Loss: %.5f Alpha: %.5f ... [%s%s] %.2f%%' % 
+                    (e, loss, alpha, 
+                    "#" * int(np.round((i / iterations) * 10)),
+                    " " * int(np.round((1 - i / iterations) * 10)), 
+                    (i + 1) / iterations * 100.0), 
+                    end="", flush = True)
+        if multiline_status:
+            print(" complete")
         #alpha transition
         if loss > epoch_startloss:
             alpha *= alphadecay
@@ -227,21 +244,19 @@ if not error:
     print(" complete")
 print("Trained %i epochs on %i samples in %.2f seconds \n" % (e + 1, trainingdatalength, time.time() - starttime))
 
-
 print("Validating...\r", end="", flush="True")
 errors = 0
-show = True
 for i in range(0,validationdatalength):
     prediction = NN.forward(vX[i:i+1])
 
     #       predicted               actual
     if np.argmax(prediction) != np.argmax(vy[i]):
-        if show and not error:
+        if showvalidationerrors and not error:
             print(imagetostring(vX[i]))
             print("Actual: %s, Prediction: %s" % (labels[np.argmax(vy[i])], batchtostring(prediction)))
             print("Press 'q' to skip validation errors")
             if input() == "q":
-                show = False
+                showvalidationerrors = False
 
         errors += 1
 

@@ -1,5 +1,1 @@
-image.png
-images.idx3-ubyte.gz
-labels.idx1-ubyte.gz
-val.images.idx3-ubyte.gz
-val.labels.idx1-ubyte.gz
+data/
