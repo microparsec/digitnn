@@ -46,8 +46,9 @@ output_size = len(labels)
 batchsize = 50           # amount of samples to process each iteration
 epochs = 100             # amount of times to look through the data set
 alpha = 0.05             # amount of learning from one iteration
-alphadecay = .8          # alpha decay factor when loss increases
-alphacutoff = 0.00005    # stop converging if alpha drops below this threshold
+alphadecay = .8          # alpha decay factor when loss reaches threshold
+alphathreshold = .99     # average loss threshold for alpha decay
+alphacutoff = 0.0001     # stop converging if alpha drops below this threshold
 
 softloss = 0.01         # smoothing factor for loss indication
 outputinterval = 25      # iterations per terminal update
@@ -251,7 +252,7 @@ for e in range(0, epochs):
 
         #alpha transition
         averageloss /= 1.0 * trainingdatalength / batchsize
-        if averageloss > epoch_startloss * .98:
+        if averageloss > epoch_startloss * alphathreshold:
             alpha *= alphadecay
             if alpha <= alphacutoff:
                 break
