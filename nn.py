@@ -5,7 +5,6 @@ import gzip
 import imageio
 import time
 
-
 # ------- GLOBAL VARIABLES
 # Training data
 imagesize = 28
@@ -28,7 +27,11 @@ yfile = "data/letters.labels.idx1-ubyte.gz"
 vXfile = "data/val.letters.images.idx3-ubyte.gz"
 vyfile = "data/val.letters.labels.idx1-ubyte.gz"
 
-showvalidationerrors = True
+# None for automatic, integer value for cutoff
+trainingdatalength = None
+validationdatalength = None
+
+showvalidationerrors = False
 
 # sampler
 sampleimage = "data/image.png"
@@ -54,8 +57,13 @@ multiline_status = True  # keep historical epochs visible
 print("Initializing training and validation data ...", end="", flush=True)
 
 with gzip.open(yfile) as bytestream:
-    bytestream.read(4)
-    trainingdatalength = int.from_bytes(bytestream.read(4), 'big')
+
+    if not trainingdatalength:
+        bytestream.read(4)
+        trainingdatalength = int.from_bytes(bytestream.read(4), 'big')
+    else:
+        bytestream.read(8)
+
     buf = bytestream.read(trainingdatalength)
     y = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
     y = y.reshape(trainingdatalength,1)
@@ -76,8 +84,13 @@ with gzip.open(Xfile) as bytestream:
     X = X.reshape(trainingdatalength, imagelength)
 
 with gzip.open(vyfile) as bytestream:
-    bytestream.read(4)
-    validationdatalength = int.from_bytes(bytestream.read(4), 'big')
+
+    if not validationdatalength:
+        bytestream.read(4)
+        validationdatalength = int.from_bytes(bytestream.read(4), 'big')
+    else:
+        bytestream.read(8)
+
     buf = bytestream.read(validationdatalength)
     vy = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
     vy = vy.reshape(validationdatalength,1)
