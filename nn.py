@@ -49,7 +49,7 @@ alpha = 0.05             # amount of learning from one iteration
 alphadecay = .8          # alpha decay factor when loss increases
 alphacutoff = 0.00005    # stop converging if alpha drops below this threshold
 
-softloss = 0.001         # smoothing factor for loss indication
+softloss = 0.01         # smoothing factor for loss indication
 outputinterval = 25      # iterations per terminal update
 multiline_status = True  # keep historical epochs visible
 
@@ -206,7 +206,8 @@ NN = NeuralNetwork(imagelength, hidden_size, len(labels))
 
 # calculate starting loss value
 forward = NN.forward(X[0:batchsize])
-loss = crossentropy(y[0:batchsize],forward) / batchsize
+indicatedloss = crossentropy(y[0:batchsize],forward) / batchsize
+averageloss = indicatedloss
 
 starttime = time.time()
 
@@ -214,9 +215,11 @@ starttime = time.time()
 error = False
 for e in range(0, epochs):
     try:
-        epoch_startloss = loss
+        epoch_startloss = averageloss
+        averageloss = 0.0
 
         # shuffle the dataset
+        print("Shuffling...\r", end="", flush="True")
         indices = np.arange(X.shape[0])
         np.random.shuffle(indices)
 
@@ -230,19 +233,25 @@ for e in range(0, epochs):
             batchend = (i + 1) * batchsize
 
             forward = NN.train(X[batchstart:batchend], y[batchstart:batchend], batchsize, alpha)
-            loss = crossentropy(y[batchstart:batchend], forward) / batchsize * softloss + (1-softloss) * loss
+            loss = crossentropy(y[batchstart:batchend], forward) / batchsize
+            averageloss += loss
+            indicatedloss = loss * softloss + (1-softloss) * indicatedloss
 
             if i % outputinterval == 0 or i + 1 == iterations:
                 print('\rEpoch %03d Loss: %.5f Alpha: %.5f ... [%s%s] %.2f%%' % 
-                    (e, loss, alpha, 
+                    (e,
+                    indicatedloss if i + 1 != iterations else averageloss / (1.0 * trainingdatalength / batchsize),
+                    alpha,
                     "#" * int(np.round((i / iterations) * 10)),
-                    " " * int(np.round((1 - i / iterations) * 10)), 
-                    (i + 1) / iterations * 100.0), 
+                    " " * int(np.round((1 - i / iterations) * 10)),
+                    (i + 1) / iterations * 100.0),
                     end="", flush = True)
         if multiline_status:
             print(" complete")
+
         #alpha transition
-        if loss > epoch_startloss:
+        averageloss /= 1.0 * trainingdatalength / batchsize
+        if averageloss > epoch_startloss * .98:
             alpha *= alphadecay
             if alpha <= alphacutoff:
                 break
