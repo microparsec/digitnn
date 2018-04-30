@@ -122,8 +122,8 @@ def softmax(s):
     exps = np.exp(s - np.max(s, axis=-1,keepdims=True))
     return exps / np.sum(exps, axis=-1,keepdims=True)
 
-def crossentropy(y_, y, e = 1e-12):
-    return -np.sum(y_ * np.log(y + e)) 
+def crossentropy(y, y_, e = 1e-12):
+    return -np.sum(y * np.log(y_ + e))
 
 def imagetostring(image):
     output = ""
