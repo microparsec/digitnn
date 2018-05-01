@@ -10,22 +10,22 @@ import time
 imagesize = 28
 imagelength = imagesize * imagesize
 
-# labels = ["0","1","2","3","4","5","6","7","8","9"]
+labels = ["0","1","2","3","4","5","6","7","8","9"]
 
-# Xfile = "data/digits.images.idx3-ubyte.gz"
-# yfile = "data/digits.labels.idx1-ubyte.gz"
+Xfile = "data/digits.images.idx3-ubyte.gz"
+yfile = "data/digits.labels.idx1-ubyte.gz"
 
-# vXfile = "data/val.digits.images.idx3-ubyte.gz"
-# vyfile = "data/val.digits.labels.idx1-ubyte.gz"
+vXfile = "data/val.digits.images.idx3-ubyte.gz"
+vyfile = "data/val.digits.labels.idx1-ubyte.gz"
 
 
-labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+# labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
 
-Xfile = "data/letters.images.idx3-ubyte.gz"
-yfile = "data/letters.labels.idx1-ubyte.gz"
+# Xfile = "data/letters.images.idx3-ubyte.gz"
+# yfile = "data/letters.labels.idx1-ubyte.gz"
 
-vXfile = "data/val.letters.images.idx3-ubyte.gz"
-vyfile = "data/val.letters.labels.idx1-ubyte.gz"
+# vXfile = "data/val.letters.images.idx3-ubyte.gz"
+# vyfile = "data/val.letters.labels.idx1-ubyte.gz"
 
 # None for automatic, integer value for cutoff
 trainingdatalength = None
