@@ -45,12 +45,12 @@ output_size = len(labels)
 # Training variables
 batchsize = 50           # amount of samples to process each iteration
 epochs = 100             # amount of times to look through the data set
-alpha = 0.05             # amount of learning from one iteration
+alpha = 0.001            # amount of learning from one iteration
 alphadecay = .8          # alpha decay factor when loss reaches threshold
 alphathreshold = .99     # average loss threshold for alpha decay
 alphacutoff = 0.0001     # stop converging if alpha drops below this threshold
 
-softloss = 0.01         # smoothing factor for loss indication
+softloss = 0.01          # smoothing factor for loss indication
 outputinterval = 25      # iterations per terminal update
 multiline_status = True  # keep historical epochs visible
 
@@ -119,6 +119,12 @@ def sigmoid(s):
 def dsigmoid(s):
     return s * (1 - s)
 
+def tanh(s):
+    return np.tanh(s)
+
+def dtanh(s):
+    return 1.0 - (np.tanh(s) ** 2)
+
 def softmax(s):
     exps = np.exp(s - np.max(s, axis=-1,keepdims=True))
     return exps / np.sum(exps, axis=-1,keepdims=True)
@@ -154,30 +160,29 @@ class NeuralNetwork:
         self.H = H
         self.O = O
 
-        self.W1 = np.random.randn(N, H)
+        self.W1 = np.random.randn(N, H) / np.sqrt(N)
         self.B1 = np.zeros(H)
-        self.W2 = np.random.randn(H, H)
+        self.W2 = np.random.randn(H, H) / np.sqrt(H)
         self.B2 = np.zeros(H)
-        self.W3 = np.random.randn(H, O)
+        self.W3 = np.random.randn(H, O) / np.sqrt(O)
         self.B3 = np.zeros(O)
         
     def forward(self, X):
         self.z  = self.B1 + np.dot(X, self.W1)
-        self.z2 = sigmoid(self.z)
+        self.z2 = tanh(self.z)
         self.z3 = self.B2 + np.dot(self.z2, self.W2)
-        self.z4 = sigmoid(self.z3)
+        self.z4 = tanh(self.z3)
         self.z5 = self.B3 + np.dot(self.z4, self.W3)
         return softmax(self.z5)
 
     def backward(self, X, y, o):
-        #self.o_error = y - o
         self.o_derror = o - y
 
         self.z4_error = self.o_derror.dot(self.W3.T)
-        self.z4_derror = self.z4_error * dsigmoid(self.z4)
+        self.z4_derror = self.z4_error * dtanh(self.z4)
 
         self.z2_error = self.z4_derror.dot(self.W2.T)
-        self.z2_derror = self.z2_error * dsigmoid(self.z2)
+        self.z2_derror = self.z2_error * dtanh(self.z2)
 
         dW1 = X.T.dot(self.z2_derror)
         dB1 = np.sum(self.z2_derror, axis=0)
